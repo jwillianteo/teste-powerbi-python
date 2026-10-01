@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Vendas e Metas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 4px;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+    .has-tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .tooltip-box {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(2px);
+      pointer-events: none;
+      z-index: 50;
+      background-color: #020617 !important;
+    }
+    .has-tooltip:hover .tooltip-box, .has-tooltip:focus-within .tooltip-box {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-sky-500 selection:text-white custom-scroll">
+
+  <!-- Compact Integrated Header & Slicers Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-3 sm:px-5 py-2">
+    <div class="max-w-[1700px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
+      
+      <!-- Official Title requested by user -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 via-indigo-600 to-amber-500 p-0.5 flex items-center justify-center shadow-md shadow-sky-500/20">
+          <div class="w-full h-full bg-slate-900 rounded-[6px] flex items-center justify-center">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-extrabold text-sm sm:text-base tracking-tight text-white leading-tight">
+              Dashboard de Vendas e Metas
+            </h1>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              Power BI & DAX
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-none hidden md:block mt-0.5">Relatório Executivo de Vendas, Metas e Atingimento por País e Produto</p>
+        </div>
+      </div>
+
+      <!-- Slicers & Quick Actions integrated in Top Bar -->
+      <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-1 text-slate-400 text-[11px] font-bold uppercase tracking-wider hidden lg:flex mr-0.5">
+          <i data-lucide="filter" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span>Filtros:</span>
+        </div>
+
+        <!-- Country Filter -->
+        <div class="relative">
+          <select id="filter-country" onchange="applyFilters()" class="bg-slate-950 border border-slate-700/80 text-slate-200 text-xs rounded-lg px-2.5 py-1 pr-7 focus:ring-1 focus:ring-sky-500 focus:outline-none appearance-none cursor-pointer">
+            <option value="ALL">🌍 Todos os Países</option>
+            <option value="Germany">🇩🇪 Alemanha</option>
+            <option value="United Kingdom">🇬🇧 Reino Unido</option>
+            <option value="France">🇫🇷 França</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1.5 pointer-events-none"></i>
+        </div>
+
+        <!-- Year Filter -->
+        <div class="relative">
+          <select id="filter-year" onchange="applyFilters()" class="bg-slate-950 border border-slate-700/80 text-slate-200 text-xs rounded-lg px-2.5 py-1 pr-7 focus:ring-1 focus:ring-sky-500 focus:outline-none appearance-none cursor-pointer">
+            <option value="ALL">📅 Todos os Anos</option>
+            <option value="2017">2017</option>
+            <option value="2018">2018</option>
+            <option value="2019">2019</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1.5 pointer-events-none"></i>
+        </div>
+
+        <!-- Parameter pRemoverBrancos Slicer -->
+        <div class="relative">
+          <select id="filter-remover-brancos" onchange="applyFilters()" class="bg-slate-950 border border-amber-500/50 text-amber-300 font-semibold text-xs rounded-lg px-2.5 py-1 pr-7 focus:ring-1 focus:ring-amber-500 focus:outline-none appearance-none cursor-pointer hover:border-amber-400 transition shadow-sm" title="Parâmetro Power Query: pRemoverBrancos">
+            <option value="true" selected>⚙️ pRemoverBrancos: True (PBI Oficial)</option>
+            <option value="false">🛡️ pRemoverBrancos: False (Preservar 96%)</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-amber-400 absolute right-2 top-1.5 pointer-events-none"></i>
+        </div>
+
+        <!-- Reset Button -->
+        <button onclick="resetFilters()" class="p-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition" title="Limpar Filtros">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <!-- Print Button -->
+        <button onclick="window.print()" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center space-x-1" title="Imprimir / Salvar PDF">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span class="hidden sm:inline">Imprimir</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Container: Optimized Compact Layout to Fit Entire Screen -->
+  <main class="max-w-[1700px] mx-auto px-3 sm:px-5 py-2.5 w-full flex-1 flex flex-col justify-between gap-2.5">
+
+    <!-- KPI Summary Cards (Os 3 Cartões Oficiais do Power BI) -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+
+      <!-- Card 1: Vendas (Lucro Bruto) -->
+      <div class="glass-card rounded-xl p-3 relative group hover:border-sky-500/40 transition-all flex flex-col justify-between">
+        <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none -z-10">
+          <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-sky-500/10 rounded-full blur-xl group-hover:bg-sky-500/20 transition-all"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vendas (Lucro Bruto)</span>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('vendas')" class="p-1 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver detalhes e medida DAX" title="Ver detalhes da medida DAX">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver fórmula DAX
+            </div>
+          </div>
+        </div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <h2 id="kpi-vendas" class="text-xl sm:text-2xl font-black text-white tracking-tight">R$ 258.011,08</h2>
+          <span id="kpi-transacoes" class="text-xs text-sky-400 font-medium">690 transações</span>
+        </div>
+        <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono border-t border-slate-800/60 pt-1">
+          <span>Tabela Fato: fVendas</span>
+          <span>Atualizado via ETL</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Total de Metas -->
+      <div class="glass-card rounded-xl p-3 relative group hover:border-indigo-500/40 transition-all flex flex-col justify-between">
+        <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none -z-10">
+          <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-all"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total de Metas</span>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('metas')" class="p-1 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver detalhes e medida DAX" title="Ver detalhes da medida DAX">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver fórmula DAX
+            </div>
+          </div>
+        </div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <h2 id="kpi-metas" class="text-xl sm:text-2xl font-black text-white tracking-tight">R$ 308.374,30</h2>
+          <span class="text-xs text-indigo-400 font-medium">8 metas anuais</span>
+        </div>
+        <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono border-t border-slate-800/60 pt-1">
+          <span>Tabela Dimensão: fMetas</span>
+          <span>Alemanha, UK, França</span>
+        </div>
+      </div>
+
+      <!-- Card 3: % Atingimento da Meta -->
+      <div class="glass-card rounded-xl p-3 relative group hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+        <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none -z-10">
+          <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">% Atingimento da Meta</span>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('atingimento')" class="p-1 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver detalhes e medida DAX" title="Ver detalhes da medida DAX">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver fórmula DAX
+            </div>
+          </div>
+        </div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <h2 id="kpi-atingimento" class="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight">83,7%</h2>
+          <span id="kpi-gap" class="text-xs text-rose-400 font-medium">Gap: -R$ 50.363,22</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="mt-1 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div id="kpi-progress" class="bg-gradient-to-r from-emerald-500 to-sky-400 h-1.5 rounded-full transition-all duration-500" style="width: 83.7%"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Visuals Section Row 1: Vendas por Produto & Vendas Mensais (Item 8) -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+      <!-- Visual 1: Gráfico de Barras - Vendas por Produto (5 Cols) -->
+      <div class="lg:col-span-5 glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-4 bg-sky-500 rounded-full"></div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-white">Vendas por Produto</h3>
+              <p class="text-[10px] text-slate-400">Item 8: Gráfico de barras ordenado por faturamento</p>
+            </div>
+          </div>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('produtos')" class="p-1 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver detalhes do visual" title="Ver detalhes do visual">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver detalhes do visual
+            </div>
+          </div>
+        </div>
+
+        <div class="relative w-full h-36 sm:h-40 xl:h-44 mt-1.5">
+          <canvas id="chart-products"></canvas>
+        </div>
+
+        <div class="mt-1 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+          <span>Top Produto: <strong class="text-sky-300 font-semibold">Contoso X850 Green (R$ 63,7k)</strong></span>
+          <span class="text-slate-500 font-mono">Ordenado Decrescente</span>
+        </div>
+      </div>
+
+      <!-- Visual 2: Gráfico de Linhas - Vendas Mensais (7 Cols) -->
+      <div class="lg:col-span-7 glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-white">Vendas Mensais</h3>
+              <p class="text-[10px] text-slate-400">Item 8 & Dica de Ouro: Gráfico de linhas contínuo via dCalendario</p>
+            </div>
+          </div>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('timeline')" class="p-1 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver detalhes e Dica de Ouro" title="Ver detalhes e Dica de Ouro">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver a Dica de Ouro
+            </div>
+          </div>
+        </div>
+
+        <div class="relative w-full h-36 sm:h-40 xl:h-44 mt-1.5">
+          <canvas id="chart-timeline"></canvas>
+        </div>
+
+        <div class="mt-1 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+          <span>Pico de Vendas: <strong class="text-emerald-400 font-semibold">Nov/2018 (R$ 20.084,58)</strong></span>
+          <span class="text-slate-500 font-mono">Série Contínua 2017 a Mar/2019</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Visuals Section Row 2: Metas x Realizado por País & Variação % MoM (Item 7 e 9) -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+      <!-- Visual 3: Tabela Metas x Realizado por País (6 Cols) -->
+      <div class="lg:col-span-6 glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-4 bg-amber-500 rounded-full"></div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-white">Metas x Realizado por País</h3>
+              <p class="text-[10px] text-slate-400">Item 7: Comparativo de Vendas, Metas e % de Atingimento</p>
+            </div>
+          </div>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('paises')" class="p-1 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver nota técnica do Item 1" title="Ver nota técnica do Item 1">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver nota técnica do Item 1
+            </div>
+          </div>
+        </div>
+
+        <!-- Compact Table Content -->
+        <div class="mt-1 overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 uppercase text-[9px] tracking-wider">
+                <th class="py-1 px-2.5">País</th>
+                <th class="py-1 px-2.5 text-right">Realizado</th>
+                <th class="py-1 px-2.5 text-right">Meta</th>
+                <th class="py-1 px-2.5 text-center">% Atingimento</th>
+                <th class="py-1 px-2.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="country-table-body" class="divide-y divide-slate-800/60 font-medium">
+              <!-- Dynamically populated from exact PBI data -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-1 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+          <span id="country-table-note">Valores 100% calibrados com o Power BI</span>
+          <span class="text-slate-500 font-mono">fMetas & fVendas</span>
+        </div>
+      </div>
+
+      <!-- Visual 4: Gráfico de Colunas - Variação % de Vendas vs Mês Anterior (6 Cols) -->
+      <div class="lg:col-span-6 glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-4 bg-indigo-500 rounded-full"></div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-white">Variação % de Vendas vs Mês Anterior</h3>
+              <p class="text-[10px] text-slate-400">Item 9: Indicador DAX de Performance Mês a Mês (MoM)</p>
+            </div>
+          </div>
+          <div class="relative has-tooltip">
+            <button onclick="openTechModal('mom')" class="p-1 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition" aria-label="Ver fórmula DAX MoM" title="Ver fórmula DAX MoM">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="tooltip-box absolute right-0 top-full mt-1 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded-md shadow-xl text-[10px] font-medium text-slate-300 whitespace-nowrap pointer-events-none">
+              Clique para ver fórmula DAX MoM
+            </div>
+          </div>
+        </div>
+
+        <div class="relative w-full h-36 sm:h-40 xl:h-44 mt-1.5">
+          <canvas id="chart-mom"></canvas>
+        </div>
+
+        <div class="mt-1 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+          <span class="flex items-center text-emerald-400">
+            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> Verde = Crescimento MoM
+          </span>
+          <span class="flex items-center text-rose-400">
+            <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> Vermelho = Queda MoM
+          </span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal de Detalhes Técnicos & Medidas DAX (Ficha Técnica Interativa) -->
+  <div id="tech-modal" onclick="if(event.target === this) closeTechModal()" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-200">
+    <div id="tech-modal-card" class="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl max-w-lg w-full p-5 sm:p-6 relative text-slate-100 transform transition-all duration-200 scale-95">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div id="modal-icon-container" class="w-10 h-10 rounded-xl flex items-center justify-center">
+            <i id="modal-icon" data-lucide="calculator" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 id="modal-title" class="font-extrabold text-base sm:text-lg text-white">Vendas (Lucro Bruto)</h3>
+              <span id="modal-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold border">Item 7</span>
+            </div>
+            <p id="modal-table" class="text-xs text-slate-400 mt-0.5 font-mono">Tabela: fVendas</p>
+          </div>
+        </div>
+        <button onclick="closeTechModal()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" aria-label="Fechar">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="mt-4 space-y-3.5 text-xs">
+        
+        <!-- DAX Formula Box -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+              <i data-lucide="code" class="w-3.5 h-3.5 text-sky-400"></i>
+              <span>Fórmula DAX / Configuração:</span>
+            </span>
+            <button id="btn-copy-dax" onclick="copyDaxFormula()" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center space-x-1">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              <span id="btn-copy-text">Copiar DAX</span>
+            </button>
+          </div>
+          <pre id="modal-formula" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-emerald-400 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words overflow-x-auto selection:bg-emerald-500 selection:text-black"></pre>
+        </div>
+
+        <!-- Rule Description -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <div class="font-bold text-slate-200 mb-1 flex items-center space-x-1.5">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span id="modal-rule-title">Regra de Negócio & Premissa:</span>
+          </div>
+          <p id="modal-rule-desc" class="text-slate-300 leading-relaxed text-[11px]"></p>
+        </div>
+
+        <!-- Technical Notes & Relations -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+          <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span class="font-semibold text-sky-400 block mb-0.5">Nota de Cálculo:</span>
+            <p id="modal-notes" class="text-slate-400 leading-tight"></p>
+          </div>
+          <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span class="font-semibold text-indigo-400 block mb-0.5">Modelo Star Schema:</span>
+            <p id="modal-relations" class="text-slate-400 leading-tight font-mono text-[10px]"></p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
+        <span class="text-[10px] text-slate-500 font-mono">Pressione ESC para fechar</span>
+        <button onclick="closeTechModal()" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-600/30 transition">
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Clean Minimal Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-1.5 text-center text-[10px] text-slate-500 px-4">
+    <div class="max-w-[1700px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-1">
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-300 font-semibold">José Willian</span>
+        <span>•</span>
+        <span>Teste Técnico de Power BI & DAX</span>
+      </div>
+      <div class="text-slate-500 font-mono">
+        Modelagem Star Schema • dCalendario • dCliente • dProduto • fMetas • fVendas
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script with Local & Online Compatibility -->
+  <script src="data.js"></script>
+  <script>
+    // Global App State
+    let rawData = null;
+    let currentCountry = 'ALL';
+    let currentYear = 'ALL';
+    let currentRemoverBrancos = 'true';
+
+    // Chart instances
+    let chartProducts = null;
+    let chartTimeline = null;
+    let chartMoM = null;
+
+    // Boot
+    async function initDashboard() {
+      lucide.createIcons();
+
+      // Check window.DASHBOARD_DATA from data.js
+      if (typeof window.DASHBOARD_DATA !== 'undefined' && window.DASHBOARD_DATA) {
+        rawData = window.DASHBOARD_DATA;
+      } else {
+        try {
+          const resp = await fetch('dashboard_data.json');
+          if (resp.ok) rawData = await resp.json();
+        } catch (e) {
+          console.warn('Carregamento local:', e);
+        }
+      }
+
+      if (!rawData) rawData = getFallbackData();
+
+      renderDashboard();
+    }
+
+    function formatBRL(value) {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
+
+    function applyFilters() {
+      currentCountry = document.getElementById('filter-country').value;
+      currentYear = document.getElementById('filter-year').value;
+      currentRemoverBrancos = document.getElementById('filter-remover-brancos').value;
+      renderDashboard();
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-country').value = 'ALL';
+      document.getElementById('filter-year').value = 'ALL';
+      document.getElementById('filter-remover-brancos').value = 'true';
+      currentCountry = 'ALL';
+      currentYear = 'ALL';
+      currentRemoverBrancos = 'true';
+      renderDashboard();
+    }
+
+    function getFilteredSales() {
+      if (!rawData) return [];
+
+      const countryField = currentRemoverBrancos === 'true' ? 'País_PBI' : 'País_Original';
+
+      return rawData.registros_vendas
+        .filter(item => {
+          if (currentCountry !== 'ALL' && item[countryField] !== currentCountry) return false;
+          if (currentYear !== 'ALL' && String(item.Ano) !== currentYear) return false;
+          return true;
+        });
+    }
+
+    function getFilteredMetas() {
+      if (!rawData) return [];
+
+      return rawData.metas_anuais
+        .filter(item => {
+          if (currentCountry !== 'ALL' && item.País !== currentCountry) return false;
+          if (currentYear !== 'ALL' && String(item.Ano) !== currentYear) return false;
+          return true;
+        });
+    }
+
+    // Main Render Routine
+    function renderDashboard() {
+      const sales = getFilteredSales();
+      const metas = getFilteredMetas();
+
+      const totalVendas = sales.reduce((acc, curr) => acc + curr['Valor Venda'], 0);
+      const totalMetas = metas.reduce((acc, curr) => acc + curr['Valor Meta'], 0);
+      const atingimento = totalMetas > 0 ? (totalVendas / totalMetas) * 100 : 0;
+      const gap = totalVendas - totalMetas;
+
+      // Update KPI Cards
+      document.getElementById('kpi-vendas').innerText = formatBRL(totalVendas);
+      document.getElementById('kpi-metas').innerText = formatBRL(totalMetas);
+      document.getElementById('kpi-atingimento').innerText = atingimento.toFixed(1) + '%';
+      document.getElementById('kpi-transacoes').innerText = sales.length + ' transações';
+      document.getElementById('kpi-progress').style.width = Math.min(atingimento, 100) + '%';
+
+      const gapEl = document.getElementById('kpi-gap');
+      if (gap >= 0) {
+        gapEl.innerText = 'Superávit: +' + formatBRL(gap);
+        gapEl.className = 'text-xs text-emerald-400 font-medium';
+      } else {
+        gapEl.innerText = 'Gap: ' + formatBRL(gap);
+        gapEl.className = 'text-xs text-rose-400 font-medium';
+      }
+
+      // Render Visuals
+      renderCountryTable(sales, metas);
+      renderProductsChart(sales);
+      renderTimelineChart(sales);
+      renderMoMChart(sales);
+
+      lucide.createIcons();
+    }
+
+    function renderCountryTable(sales, metas) {
+      const tbody = document.getElementById('country-table-body');
+      tbody.innerHTML = '';
+      
+      const isPbiOficial = (currentRemoverBrancos === 'true');
+      const countryField = isPbiOficial ? 'País_PBI' : 'País_Original';
+      const countries = isPbiOficial
+        ? ['Germany', 'United Kingdom', 'France', 'Não Alocado (Item 1)']
+        : ['Germany', 'United Kingdom', 'France'];
+
+      let totSales = 0;
+      let totMetas = 0;
+
+      countries.forEach(c => {
+        if (currentCountry !== 'ALL' && currentCountry !== c) return;
+
+        const cSales = sales.filter(s => s[countryField] === c).reduce((a, b) => a + b['Valor Venda'], 0);
+        const cMetas = metas.filter(m => m.País === c).reduce((a, b) => a + b['Valor Meta'], 0);
+        const cAting = cMetas > 0 ? (cSales / cMetas) * 100 : 0;
+
+        totSales += cSales;
+        totMetas += cMetas;
+
+        let flag = c === 'Germany' ? '🇩🇪' : c === 'United Kingdom' ? '🇬🇧' : c === 'France' ? '🇫🇷' : '⚪';
+        let label = c === 'Não Alocado (Item 1)' ? 'Clientes sem Nome (Item 1)' : c;
+
+        let badge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        let status = 'Meta Superada';
+        if (cAting < 100) { badge = 'bg-amber-500/10 text-amber-400 border-amber-500/20'; status = 'Em Aberto'; }
+        if (cAting < 10) { badge = 'bg-rose-500/10 text-rose-400 border-rose-500/20'; status = 'Abaixo'; }
+        if (c === 'Não Alocado (Item 1)') { badge = 'bg-slate-700/40 text-slate-400 border-slate-700'; status = 'Sem Meta'; }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/60 transition';
+        tr.innerHTML = `
+          <td class="py-1 px-2.5 font-semibold text-slate-200 flex items-center space-x-1.5">
+            <span>${flag}</span>
+            <span class="${c === 'Não Alocado (Item 1)' ? 'italic text-slate-400' : ''}">${label}</span>
+          </td>
+          <td class="py-1 px-2.5 text-right font-mono text-slate-200">${formatBRL(cSales)}</td>
+          <td class="py-1 px-2.5 text-right font-mono text-slate-400">${cMetas > 0 ? formatBRL(cMetas) : '-'}</td>
+          <td class="py-1 px-2.5 text-center font-bold ${cAting >= 100 ? 'text-emerald-400' : cAting > 0 ? 'text-amber-400' : 'text-slate-500'}">
+            ${cMetas > 0 ? cAting.toFixed(1) + '%' : '-'}
+          </td>
+          <td class="py-1 px-2.5 text-center">
+            <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold border ${badge}">
+              ${status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Footer Total Row
+      if (currentCountry === 'ALL') {
+        const totAting = totMetas > 0 ? (totSales / totMetas) * 100 : 0;
+        const trTot = document.createElement('tr');
+        trTot.className = 'bg-slate-900/90 font-bold border-t border-slate-700 text-xs';
+        trTot.innerHTML = `
+          <td class="py-1 px-2.5 text-white uppercase text-[10px] tracking-wider">TOTAL GERAL</td>
+          <td class="py-1 px-2.5 text-right font-mono text-emerald-400">${formatBRL(totSales)}</td>
+          <td class="py-1 px-2.5 text-right font-mono text-slate-200">${formatBRL(totMetas)}</td>
+          <td class="py-1 px-2.5 text-center font-extrabold text-emerald-400">${totAting.toFixed(1)}%</td>
+          <td class="py-1 px-2.5 text-center">
+            <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              ${totAting.toFixed(1)}% Realizado
+            </span>
+          </td>
+        `;
+        tbody.appendChild(trTot);
+      }
+
+      // Update Table Footer note
+      const noteEl = document.getElementById('country-table-note');
+      if (noteEl) {
+        noteEl.innerText = isPbiOficial
+          ? 'pRemoverBrancos: True (364 vendas isoladas no Item 1)'
+          : 'pRemoverBrancos: False (364 vendas alocadas aos países)';
+      }
+    }
+
+    function renderProductsChart(sales) {
+      const prodMap = {};
+      sales.forEach(s => {
+        prodMap[s.Produto] = (prodMap[s.Produto] || 0) + s['Valor Venda'];
+      });
+
+      // Display Top 6 products in compact mode for clean spacing
+      let sorted = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+      let labels = sorted.map(i => {
+        let name = i[0].replace('Contoso ', '').replace('Player ', '').replace('8GB ', '').replace('4G ', '');
+        return name.length > 22 ? name.substring(0, 20) + '..' : name;
+      });
+      let fullNames = sorted.map(i => i[0]);
+      let data = sorted.map(i => Math.round(i[1]));
+      let bgColors = sorted.map((_, idx) => idx === 0 ? '#38bdf8' : '#0284c7');
+
+      const ctx = document.getElementById('chart-products').getContext('2d');
+      if (chartProducts) chartProducts.destroy();
+
+      chartProducts = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: bgColors,
+            borderRadius: 4,
+            maxBarThickness: 16
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { left: 0, right: 10, top: 2, bottom: 2 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => fullNames[items[0].dataIndex],
+                label: (ctx) => ' Vendas: ' + formatBRL(ctx.raw)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#e2e8f0', font: { size: 10, weight: '500' } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTimelineChart(sales) {
+      let timelineMap = {};
+      sales.forEach(s => {
+        timelineMap[s.AnoMes_Str] = (timelineMap[s.AnoMes_Str] || 0) + s['Valor Venda'];
+      });
+
+      const sortedKeys = Object.keys(timelineMap).sort();
+      const data = sortedKeys.map(k => Math.round(timelineMap[k]));
+
+      const ctx = document.getElementById('chart-timeline').getContext('2d');
+      if (chartTimeline) chartTimeline.destroy();
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      chartTimeline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sortedKeys,
+          datasets: [{
+            label: 'Vendas (R$)',
+            data: data,
+            borderColor: '#10b981',
+            borderWidth: 2,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#022c22',
+            pointRadius: 2.5,
+            pointHoverRadius: 5,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { left: 2, right: 10, top: 5, bottom: 2 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ' ' + formatBRL(ctx.raw)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 9 },
+                autoSkip: true,
+                maxTicksLimit: 10,
+                maxRotation: 0
+              }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMoMChart(sales) {
+      const monthMap = {};
+      sales.forEach(s => {
+        monthMap[s.AnoMes_Str] = (monthMap[s.AnoMes_Str] || 0) + s['Valor Venda'];
+      });
+
+      const sortedMonths = Object.keys(monthMap).sort();
+      const labels = [];
+      const data = [];
+      const colors = [];
+
+      for (let i = 1; i < sortedMonths.length; i++) {
+        const prev = monthMap[sortedMonths[i - 1]];
+        const curr = monthMap[sortedMonths[i]];
+        const pct = prev > 0 ? ((curr - prev) / prev) * 100 : 0;
+        labels.push(sortedMonths[i]);
+        data.push(Number(pct.toFixed(1)));
+        colors.push(pct >= 0 ? '#10b981' : '#f43f5e');
+      }
+
+      const ctx = document.getElementById('chart-mom').getContext('2d');
+      if (chartMoM) chartMoM.destroy();
+
+      chartMoM = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Variação MoM (%)',
+            data: data,
+            backgroundColor: colors,
+            borderRadius: 3,
+            maxBarThickness: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { left: 2, right: 10, top: 5, bottom: 2 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ' Variação: ' + ctx.raw + '%'
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 8 },
+                autoSkip: true,
+                maxTicksLimit: 10,
+                maxRotation: 0
+              }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }
+            }
+          }
+        }
+      });
+    }
+
+    // Dicionário de Fichas Técnicas & Medidas DAX Oficiais
+    const technicalDetails = {
+      vendas: {
+        title: "Vendas (Lucro Bruto)",
+        badge: "Item 7 da Avaliação",
+        color: "sky",
+        icon: "calculator",
+        table: "Tabela Fato: fVendas",
+        formula: "Vendas = SUM(fVendas[Valor Venda])",
+        ruleTitle: "Premissa do Teste Prático:",
+        ruleDescription: "O Lucro Bruto foi calculado diretamente sobre o total de faturamento registrado no campo [Valor Venda] da tabela fato fVendas, totalizando R$ 258.011,08 em 690 transações.",
+        daxNotes: "Medida base para o cálculo de metas e inteligência temporal.",
+        relations: "Chaves: ID Cliente (dCliente), ID Produto (dProduto), Data Venda (dCalendario)."
+      },
+      metas: {
+        title: "Total de Metas",
+        badge: "Item 7 da Avaliação",
+        color: "indigo",
+        icon: "target",
+        table: "Tabela Dimensão: fMetas",
+        formula: "Total de Metas = SUM(fMetas[Valor Meta])",
+        ruleTitle: "Distribuição Anual por País:",
+        ruleDescription: "Soma das metas anuais cadastradas para Alemanha, França e Reino Unido ao longo dos anos de 2017 a 2019, somando R$ 308.374,30 distribuídos em 8 registros.",
+        daxNotes: "Permite avaliar o desempenho por país e ano no contexto de filtro.",
+        relations: "Relacionada com dCalendario (Ano) e dCliente (País)."
+      },
+      atingimento: {
+        title: "% Atingimento da Meta",
+        badge: "Item 7 da Avaliação",
+        color: "emerald",
+        icon: "percent",
+        table: "Medida Calculada (KPI)",
+        formula: "% Atingimento da Meta = DIVIDE([Lucro Bruto de Vendas], [Total de Metas], 0)",
+        ruleTitle: "Divisão Segura com Tratamento de Zero:",
+        ruleDescription: "Calcula a proporção entre o Realizado e a Meta. Utiliza a função DIVIDE para retornar 0 em casos onde não há meta estabelecida, evitando erros de divisão por zero (#DIV/0).",
+        daxNotes: "O atingimento global consolidado de todo o período foi de 83,7%.",
+        relations: "Consome as medidas [Vendas] e [Total de Metas]."
+      },
+      produtos: {
+        title: "Vendas por Produto",
+        badge: "Item 8 da Avaliação",
+        color: "sky",
+        icon: "bar-chart-2",
+        table: "dProduto & fVendas",
+        formula: "Clustered Bar Chart: Eixo Y = dProduto[Produto] | Eixo X = [Vendas]",
+        ruleTitle: "Ordenação Decrescente de Faturamento:",
+        ruleDescription: "Classificado de forma decrescente para fornecer visibilidade imediata dos maiores geradores de receita. O campeão de vendas é o 'Contoso 8GB Clock & Radio MP3 Player X850 Green' com R$ 63.708,24.",
+        daxNotes: "Permite drill-down e identificação da cauda longa de produtos.",
+        relations: "Chave comum de relacionamento: ID Produto."
+      },
+      timeline: {
+        title: "Vendas Mensais (Série Temporal)",
+        badge: "Item 8 & Dica de Ouro",
+        color: "emerald",
+        icon: "sparkles",
+        table: "dCalendario & fVendas",
+        formula: "Line Chart: Eixo X = dCalendario[Mês/Ano] ordenado por dCalendario[AnoMês]",
+        ruleTitle: "Aplicação Estrita da Dica de Ouro:",
+        ruleDescription: "Tabela dCalendario personalizada e contínua (sem lacunas de datas) relacionada com fVendas e fMetas. A coluna Mês/Ano é ordenada pela coluna numérica AnoMês (Ex: 201701), garantindo a sequência cronológica perfeita de Jan/2017 a Mar/2019.",
+        daxNotes: "O pico de vendas ocorreu em Novembro/2018 com R$ 20.084,58.",
+        relations: "Relacionamento 1:N entre dCalendario[Date] e fVendas[Data Venda]."
+      },
+      paises: {
+        title: "Metas x Realizado por País & pRemoverBrancos",
+        badge: "Item 1, Item 7 & Parâmetro PQ",
+        color: "amber",
+        icon: "help-circle",
+        table: "fMetas, fVendas & dCliente",
+        formula: "// Power Query M:\nTratado = if pRemoverBrancos\n    then Table.SelectRows(Tipos, each not List.Contains(Record.FieldValues(_), null))\n    else Table.ReplaceValue(Tipos, null, \"Não informado\", Replacer.ReplaceValue, {\"Cliente\"})",
+        ruleTitle: "Engenharia de Dados e Parâmetro pRemoverBrancos:",
+        ruleDescription: "Na tabela dCliente, 18 clientes possuem nome em branco, correspondendo a 364 vendas (R$ 247.686,33 / 96% do faturamento). Criamos o parâmetro pRemoverBrancos para alternar entre o descarte estrito (True) e a preservação da integridade referencial com 'Não informado' (False). Use o seletor no topo da tela para testar ambos em tempo real!",
+        daxNotes: "Quando True: Alemanha R$ 3,6k | UK R$ 3,2k | França R$ 3,4k | Clientes sem Nome R$ 247,6k.\nQuando False: Alemanha R$ 146,2k | UK R$ 96,6k | França R$ 15,2k.",
+        relations: "Chave comum: ID Cliente e dPais[País]."
+      },
+      mom: {
+        title: "Variação % de Vendas vs Mês Anterior",
+        badge: "Item 9 da Avaliação",
+        color: "indigo",
+        icon: "trending-up",
+        table: "Inteligência Temporal (MoM)",
+        formula: "Var % Vendas vs Mês Anterior = \nVAR _VendasMesAtual = [Vendas]\nVAR _VendasMesAnterior = CALCULATE([Vendas], DATEADD(dCalendario[Date], -1, MONTH))\nRETURN\nDIVIDE(_VendasMesAtual - _VendasMesAnterior, _VendasMesAnterior)",
+        ruleTitle: "Time Intelligence com DATEADD:",
+        ruleDescription: "Indicador que calcula o crescimento percentual mês a mês. O visual aplica formatação condicional automática: barras verdes para expansão e vermelhas para retração de vendas.",
+        daxNotes: "Exige que a dCalendario seja contínua e sem quebra de dias.",
+        relations: "Calculado sobre a dCalendario com deslocamento de -1 Mês."
+      }
+    };
+
+    let currentModalFormula = '';
+
+    function openTechModal(key) {
+      const item = technicalDetails[key];
+      if (!item) return;
+
+      currentModalFormula = item.formula;
+
+      document.getElementById('modal-title').innerText = item.title;
+      document.getElementById('modal-badge').innerText = item.badge;
+      document.getElementById('modal-table').innerText = item.table;
+      document.getElementById('modal-formula').innerText = item.formula;
+      document.getElementById('modal-rule-title').innerText = item.ruleTitle;
+      document.getElementById('modal-rule-desc').innerText = item.ruleDescription;
+      document.getElementById('modal-notes').innerText = item.daxNotes;
+      document.getElementById('modal-relations').innerText = item.relations;
+
+      const iconContainer = document.getElementById('modal-icon-container');
+      const iconEl = document.getElementById('modal-icon');
+      iconEl.setAttribute('data-lucide', item.icon);
+
+      if (item.color === 'sky') {
+        iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500/20 text-sky-400 border border-sky-500/30';
+        document.getElementById('modal-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-bold border bg-sky-500/10 text-sky-400 border-sky-500/30';
+      } else if (item.color === 'indigo') {
+        iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
+        document.getElementById('modal-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+      } else if (item.color === 'emerald') {
+        iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        document.getElementById('modal-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      } else if (item.color === 'amber') {
+        iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        document.getElementById('modal-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-400 border-amber-500/30';
+      }
+
+      lucide.createIcons();
+
+      const modal = document.getElementById('tech-modal');
+      const card = document.getElementById('tech-modal-card');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        card.classList.remove('scale-95');
+        card.classList.add('scale-100');
+      }, 10);
+    }
+
+    function closeTechModal() {
+      const modal = document.getElementById('tech-modal');
+      const card = document.getElementById('tech-modal-card');
+      if (!card) return;
+      card.classList.remove('scale-100');
+      card.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 150);
+    }
+
+    function copyDaxFormula() {
+      if (!currentModalFormula) return;
+      navigator.clipboard.writeText(currentModalFormula).then(() => {
+        const btnText = document.getElementById('btn-copy-text');
+        btnText.innerText = 'Copiado!';
+        setTimeout(() => {
+          btnText.innerText = 'Copiar DAX';
+        }, 2000);
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTechModal();
+    });
+
+    function getFallbackData() {
+      return {
+        metadata: { total_receita: 258011.08, total_metas: 308374.30 },
+        metas_anuais: [],
+        registros_vendas: []
+      };
+    }
+
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
